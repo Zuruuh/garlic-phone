@@ -1,72 +1,16 @@
-import { Context, Hono } from 'hono';
+import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { setCookie } from 'hono/cookie';
 import { vValidator as valibot } from '@hono/valibot-validator';
 import { logger } from 'hono/logger';
 import { secureHeaders } from 'hono/secure-headers';
 import { poweredBy } from 'hono/powered-by';
 import { streamSSE } from 'hono/streaming';
-import { EventEmitter } from 'node:events';
-import type TypedEmitter from 'typed-emitter';
-
 import { nanoid } from 'nanoid';
 import { custom, length, minLength, object, string, transform } from 'valibot';
-
-export type Events = {
-  ['player-join']: (data: { player: string }) => void;
-  ['player-left']: (data: { player: string }) => void;
-  ['room-closed']: (data: {}) => void;
-  ['game-stopped']: (data: { player: string }) => void;
-  start: (data: {}) => void;
-};
-
-class Room {
-  public readonly players = new Set<string>();
-  private started = false;
-  public readonly emitter = new EventEmitter() as TypedEmitter<Events>;
-
-  public constructor(
-    public readonly name: string,
-    public readonly owner: string,
-  ) {
-    this.players.add(owner);
-  }
-
-  public didStart(): boolean {
-    return this.started;
-  }
-
-  public addPlayer(player: string): void {
-    this.players.add(player);
-
-    this.emitter.emit('player-join', { player });
-  }
-
-  public removePlayer(player: string): void {
-    this.players.delete(player);
-
-    this.emitter.emit('player-left', { player });
-  }
-
-  public stop(playerWhoLeft: string): void {
-    this.removePlayer(playerWhoLeft);
-    this.emitter.emit('game-stopped', { player: playerWhoLeft });
-  }
-
-  public close(): void {
-    this.players.clear();
-    this.emitter.emit('room-closed', {});
-  }
-
-  public start(): void {
-    this.emitter.emit('start', {});
-  }
-}
+import { Room } from './room';
 
 export const players = new Map<string, string>();
 export const rooms = new Map<string, Room>();
-export const PLAYER_ID_COOKIE = 'player';
-export const ROOM_ID_COOKIE = 'room';
 
 const PlayerId = transform(
   string([length(21), custom((id) => players.has(id))]),
@@ -99,46 +43,35 @@ const routes = new Hono()
       const id = nanoid().replace('-', '_');
 
       players.set(id, player);
-      setCookie(c, PLAYER_ID_COOKIE, id, {
-        httpOnly: true,
-        secure: IS_PROD,
-        sameSite: 'Strict',
-      });
 
-      return c.newResponse(null, 204);
+      return c.newResponse(id, 200);
     },
   )
   .post(
     '/rooms',
-    valibot('cookie', object({ [PLAYER_ID_COOKIE]: PlayerId })),
+    valibot('header', object({ 'x-player': PlayerId })),
     valibot('json', object({ roomName: string([minLength(2)]) })),
     (c) => {
       if (rooms.size >= 4 && IS_PROD) {
         return c.text('Max rooms limit reached', 400);
       }
 
-      const { player } = c.req.valid('cookie');
+      const { 'x-player': player } = c.req.valid('header');
       const { roomName } = c.req.valid('json');
 
       const roomId = nanoid().replace('-', '_');
       rooms.set(roomId, new Room(roomName, player));
-
-      setCookie(c, ROOM_ID_COOKIE, roomId, {
-        httpOnly: true,
-        secure: IS_PROD,
-        sameSite: 'Strict',
-      });
 
       return c.text(roomId);
     },
   )
   .post(
     '/rooms/:room/join',
-    valibot('cookie', object({ [PLAYER_ID_COOKIE]: PlayerId })),
-    valibot('param', object({ [ROOM_ID_COOKIE]: RoomId })),
+    valibot('header', object({ 'x-player': PlayerId })),
+    valibot('param', object({ room: RoomId })),
     (c) => {
       const { room } = c.req.valid('param');
-      const { player } = c.req.valid('cookie');
+      const { 'x-player': player } = c.req.valid('header');
 
       if (room.didStart()) {
         return c.text('This game already started, you cannot join it now!');
@@ -159,12 +92,9 @@ const routes = new Hono()
   )
   .post(
     '/rooms/leave',
-    valibot(
-      'cookie',
-      object({ [PLAYER_ID_COOKIE]: PlayerId, [ROOM_ID_COOKIE]: RoomId }),
-    ),
+    valibot('header', object({ 'x-player': PlayerId, 'x-room': RoomId })),
     (c) => {
-      const { player, room } = c.req.valid('cookie');
+      const { 'x-player': player, 'x-room': room } = c.req.valid('header');
 
       if (!room.players.has(player)) {
         return c.text('You are not a player of this room!', 400);
@@ -183,12 +113,9 @@ const routes = new Hono()
   )
   .post(
     '/rooms/start',
-    valibot(
-      'cookie',
-      object({ [PLAYER_ID_COOKIE]: PlayerId, [ROOM_ID_COOKIE]: RoomId }),
-    ),
+    valibot('header', object({ 'x-player': PlayerId, 'x-room': RoomId })),
     (c) => {
-      const { player, room } = c.req.valid('cookie');
+      const { 'x-player': player, 'x-room': room } = c.req.valid('header');
 
       if (player !== room.owner) {
         return c.text('You are not the owner of this room!', 400);
@@ -209,12 +136,9 @@ const routes = new Hono()
   )
   .get(
     '/rooms/events',
-    valibot(
-      'cookie',
-      object({ [PLAYER_ID_COOKIE]: PlayerId, [ROOM_ID_COOKIE]: RoomId }),
-    ),
+    valibot('header', object({ 'x-player': PlayerId, 'x-room': RoomId })),
     async (c) => {
-      const { room, player } = c.req.valid('cookie');
+      const { 'x-room': room, 'x-player': player } = c.req.valid('header');
 
       if (room.players.has(player)) {
         return c.text('You are not a player of this room!', 400);

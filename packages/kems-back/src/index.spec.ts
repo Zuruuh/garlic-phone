@@ -29,11 +29,11 @@ test('I cannot join my own room', async () => {
   expect(rooms.size).toBe(1);
   expect(rooms.has(roomId)).toBeTrue();
   expect(rooms.get(roomId)?.players.size).toBe(1);
-  expect(rooms.get(roomId)?.players.has('zuruh')).toBeTrue()
+  expect(rooms.get(roomId)?.players.has('zuruh')).toBeTrue();
   expect(res.status).toBe(400);
 });
 
-test('Someone else can join my room', async () => {
+test("I can join someone else's room", async () => {
   const ownerId = await login('zuruh');
   const playerId = await login('ruzuh');
   const roomId = await createRoom(ownerId, 'feur');
@@ -42,8 +42,8 @@ test('Someone else can join my room', async () => {
   expect(rooms.size).toBe(1);
   expect(rooms.has(roomId)).toBeTrue();
   expect(rooms.get(roomId)?.players.size).toBe(2);
-  expect(rooms.get(roomId)?.players.has('zuruh')).toBeTrue()
-  expect(rooms.get(roomId)?.players.has('ruzuh')).toBeTrue()
+  expect(rooms.get(roomId)?.players.has('zuruh')).toBeTrue();
+  expect(rooms.get(roomId)?.players.has('ruzuh')).toBeTrue();
 
   expect(res.status).toBe(200);
   expect(await res.text()).toBe('feur');

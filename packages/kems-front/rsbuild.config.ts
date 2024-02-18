@@ -1,6 +1,7 @@
 import { defineConfig } from '@rsbuild/core';
 import { pluginBabel } from '@rsbuild/plugin-babel';
 import { pluginSolid } from '@rsbuild/plugin-solid';
+import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
 
 export default defineConfig({
   plugins: [
@@ -10,4 +11,14 @@ export default defineConfig({
     }),
     pluginSolid(),
   ],
+  tools: {
+    rspack(_, { appendPlugins }): void {
+      if (process.env.RSDOCTOR) {
+        appendPlugins(new RsdoctorRspackPlugin({}));
+      }
+    },
+    postcss(_, { addPlugins }): void {
+      addPlugins(require('@pandacss/dev/postcss'));
+    },
+  },
 });

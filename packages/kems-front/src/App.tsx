@@ -1,26 +1,31 @@
 import './App.css';
-import type { Api } from '@kems/back';
-import { hc } from 'hono/client';
-import { Show, createEffect, createSignal } from 'solid-js';
+import { lazy, type Component } from 'solid-js';
+import { Route, Router } from '@solidjs/router';
+import { QueryClient, QueryClientProvider } from '@tanstack/solid-query';
+import { persistQueryClient } from '@tanstack/solid-query-persist-client';
+import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 
-const api = hc<Api>('http://localhost:8000');
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: Infinity } },
+});
 
-const App = () => {
-  const [text, setText] = createSignal<null | string>(null);
+const localStoragePersister = createSyncStoragePersister({
+  storage: localStorage,
+});
 
-  createEffect(async () => {
-    const res = await api.register.$post({ json: { name: 'test' } });
-    setText(await res.text());
-  });
+persistQueryClient({ queryClient, persister: localStoragePersister });
 
+const HomePage = lazy(() => import('./pages/HomePage'));
+const JoinRoomPage = lazy(() => import('./pages/JoinRoomPage'));
+
+const App: Component = () => {
   return (
-    <div class="content">
-      <h1>Rsbuild with Solid</h1>
-      <p>Start building amazing things with Rsbuild.</p>
-      <Show when={text() !== null}>
-        <p>{text()}</p>
-      </Show>
-    </div>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <Route path="/" component={HomePage} />
+        <Route path="/join-room" component={JoinRoomPage} />
+      </Router>
+    </QueryClientProvider>
   );
 };
 

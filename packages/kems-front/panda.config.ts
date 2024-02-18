@@ -6,5 +6,5 @@ export default defineConfig({
   theme: {
     extend: {},
   },
-  outdir: 'styled-system',
+  outdir: './styled-system',
 });

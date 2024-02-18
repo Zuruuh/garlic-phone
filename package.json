@@ -8,10 +8,12 @@
     "format": "biome format .",
     "lint": "bun lint:biome && bun lint:typescript",
     "lint:biome": "biome lint .",
-    "lint:typescript": "tsc --project tsconfig.back.jsonc && tsc --project tsconfig.front.json",
+    "lint:typescript": "tsc --project tsconfig.back.jsonc && tsc --project tsconfig.front.jsonc",
     "build": "bun run --cwd packages/kems-front/ build",
-    "server:dev": "bun run --cwd packages/kems-back/ --hot packages/kems-back/src/index.ts",
-    "front:dev": "bun run --cwd packages/kems-front/ dev"
+    "rsdoctor": "RSDOCTOR=true bun run --cwd packages/kems-front/ build",
+    "preview": "bun run --cwd packages/kems-front preview",
+    "front:dev": "bun run --cwd packages/kems-front/ dev",
+    "server:dev": "bun run --cwd packages/kems-back/ --hot packages/kems-back/src/index.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.5.3",
