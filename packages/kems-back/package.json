@@ -1,6 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/package.json",
   "name": "@kems/back",
+  "private": true,
   "type": "module",
   "exports": "./src/index.ts",
   "scripts": {
