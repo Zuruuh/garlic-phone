@@ -25,7 +25,7 @@ const HomePage: Component = () => {
   createEffect(() => console.log(playerId.data?.name));
 
   return (
-    <main class={css({ backgroundColor: 'black' })}>
+    <main class={css({ backgroundColor: 'red' })}>
       <h1>Kems</h1>
       <Switch fallback={<RegisterForm />}>
         <Match when={playerId.isPending}>
@@ -55,7 +55,8 @@ const RegisterForm: Component = () => {
     mutationFn: async (name: string) => {
       const res = await api.register.$post({ json: { name } });
       if (!res.ok) {
-        throw new Error(await res.json());
+        const json = await res.json();
+        throw { json };
       }
 
       return {
@@ -69,36 +70,34 @@ const RegisterForm: Component = () => {
   }));
 
   return (
-    <form.Provider>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          void form.handleSubmit();
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        void form.handleSubmit();
+      }}
+    >
+      <form.Field
+        name="name"
+        validators={{
+          onChange: string([
+            minLength(2, 'Your username must be at least 2 chars long'),
+          ]),
         }}
-      >
-        <form.Field
-          name="name"
-          validators={{
-            onChange: string([
-              minLength(2, 'Your username must be at least 2 chars long'),
-            ]),
-          }}
-          children={(field) => (
-            <div>
-              <label for={field().name}>Username:</label>
-              <input
-                id={field().name}
-                name={field().name}
-                value={field().state.value}
-                onBlur={field().handleBlur}
-                onInput={(e) => field().handleChange(e.target.value)}
-              />
-              <FieldInfo field={field()} />
-            </div>
-          )}
-        />
-      </form>
-    </form.Provider>
+        children={(field) => (
+          <div>
+            <label for={field().name}>Username:</label>
+            <input
+              id={field().name}
+              name={field().name}
+              value={field().state.value}
+              onBlur={field().handleBlur}
+              onInput={(e) => field().handleChange(e.target.value)}
+            />
+            <FieldInfo field={field()} />
+          </div>
+        )}
+      />
+    </form>
   );
 };

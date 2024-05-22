@@ -7,5 +7,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["packages/kems-back"]
+  "include": ["apps/garlic-phone-back"]
 }

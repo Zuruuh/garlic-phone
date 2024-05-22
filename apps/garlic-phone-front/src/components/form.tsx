@@ -1,7 +1,8 @@
-import { FieldApi } from '@tanstack/solid-form';
+import type { FieldApi } from '@tanstack/solid-form';
 import type { Component } from 'solid-js';
 
 interface FieldInfoProps {
+  // biome-ignore lint/suspicious/noExplicitAny: typing is annoying to get right
   field: FieldApi<any, any, any, any>;
 }
 

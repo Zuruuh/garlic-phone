@@ -1,56 +1,19 @@
 import { Hono } from 'hono';
-import { cors } from 'hono/cors';
 import { vValidator as valibot } from '@hono/valibot-validator';
-import { logger } from 'hono/logger';
-import { secureHeaders } from 'hono/secure-headers';
-import { poweredBy } from 'hono/powered-by';
 import { streamSSE } from 'hono/streaming';
+import { PlayerId, RoomId } from '../validators';
+import * as v from 'valibot';
+import { IS_PROD } from '../constants';
+import { rooms } from '../stores';
+import { Room } from '../models/room';
 import { nanoid } from 'nanoid';
-import { custom, length, minLength, object, string, transform } from 'valibot';
-import { Room } from './room';
 
-export const players = new Map<string, string>();
-export const rooms = new Map<string, Room>();
-
-const PlayerId = transform(
-  string([length(21), custom((id) => players.has(id))]),
-  (id) => players.get(id)!,
-);
-
-const RoomId = transform(
-  string([length(21), custom((id) => rooms.has(id))]),
-  (id) => rooms.get(id)!,
-);
-
-const IS_PROD = process.env.NODE_ENV === 'production';
-
-const middlewares = new Hono().use(cors()).use(poweredBy());
-
-if (process.env.NODE_ENV !== 'test') {
-  middlewares.use(logger());
-}
-
-if (IS_PROD) {
-  middlewares.use(secureHeaders());
-}
-
-const routes = new Hono()
-  .post(
-    '/register',
-    valibot('json', object({ name: string([minLength(2)]) })),
-    (c) => {
-      const { name: player } = c.req.valid('json');
-      const id = nanoid().replace('-', '_');
-
-      players.set(id, player);
-
-      return c.newResponse(id, 200);
-    },
-  )
+export default new Hono()
+  .get('/rooms', (c) => c.json(rooms.entries()))
   .post(
     '/rooms',
-    valibot('header', object({ 'x-player': PlayerId })),
-    valibot('json', object({ roomName: string([minLength(2)]) })),
+    valibot('header', v.object({ 'x-player': PlayerId })),
+    valibot('json', v.object({ roomName: v.string([v.minLength(2)]) })),
     (c) => {
       if (rooms.size >= 4 && IS_PROD) {
         return c.text('Max rooms limit reached', 400);
@@ -67,8 +30,8 @@ const routes = new Hono()
   )
   .post(
     '/rooms/:room/join',
-    valibot('header', object({ 'x-player': PlayerId })),
-    valibot('param', object({ room: RoomId })),
+    valibot('header', v.object({ 'x-player': PlayerId })),
+    valibot('param', v.object({ room: RoomId })),
     (c) => {
       const { room } = c.req.valid('param');
       const { 'x-player': player } = c.req.valid('header');
@@ -92,7 +55,7 @@ const routes = new Hono()
   )
   .post(
     '/rooms/leave',
-    valibot('header', object({ 'x-player': PlayerId, 'x-room': RoomId })),
+    valibot('header', v.object({ 'x-player': PlayerId, 'x-room': RoomId })),
     (c) => {
       const { 'x-player': player, 'x-room': room } = c.req.valid('header');
 
@@ -113,7 +76,7 @@ const routes = new Hono()
   )
   .post(
     '/rooms/start',
-    valibot('header', object({ 'x-player': PlayerId, 'x-room': RoomId })),
+    valibot('header', v.object({ 'x-player': PlayerId, 'x-room': RoomId })),
     (c) => {
       const { 'x-player': player, 'x-room': room } = c.req.valid('header');
 
@@ -136,7 +99,7 @@ const routes = new Hono()
   )
   .get(
     '/rooms/events',
-    valibot('header', object({ 'x-player': PlayerId, 'x-room': RoomId })),
+    valibot('header', v.object({ 'x-player': PlayerId, 'x-room': RoomId })),
     async (c) => {
       const { 'x-room': room, 'x-player': player } = c.req.valid('header');
 
@@ -198,12 +161,3 @@ const routes = new Hono()
       });
     },
   );
-
-export const app = middlewares.route('/', routes);
-
-export type Api = typeof app;
-
-export default {
-  port: Number.parseInt(process.env.API_PORT!) || 3000,
-  fetch: app.fetch,
-};

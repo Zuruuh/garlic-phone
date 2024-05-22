@@ -1,4 +1,4 @@
-import { players, rooms } from './index';
+import { players, rooms } from './stores';
 import { expect, test, beforeEach } from 'bun:test';
 import { createRoom, joinRoom, leaveRoom, login } from './tests/utils';
 

@@ -2,7 +2,10 @@
   "$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/tsconfig.json",
   "compilerOptions": {
     "target": "ES2020",
-    "lib": ["DOM", "ES2020"],
+    "lib": [
+      "DOM",
+      "ES2020"
+    ],
     "module": "ESNext",
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
@@ -14,5 +17,8 @@
     "useDefineForClassFields": true,
     "noEmit": true
   },
-  "include": ["packages/kems-front/src"]
+  "include": [
+    "apps/garlic-phone-front/src",
+    "apps/garlic-phone-front/styled-system"
+  ]
 }

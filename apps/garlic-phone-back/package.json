@@ -1,18 +1,18 @@
 {
   "$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/package.json",
-  "name": "@kems/back",
+  "name": "garlic-phone-back",
   "private": true,
   "type": "module",
   "exports": "./src/index.ts",
   "scripts": {
-    "dev": "bun run --hot src/index.ts"
+    "dev": "bun run --hot --no-clear-screen src/index.ts"
   },
   "dependencies": {
-    "@hono/valibot-validator": "^0.2.2",
-    "hono": "^4.0.3",
-    "nanoid": "^5.0.5",
+    "@hono/valibot-validator": "^0.2.5",
+    "hono": "^4.3.9",
+    "nanoid": "^5.0.7",
     "typed-emitter": "^2.1.0",
-    "valibot": "^0.28.1"
+    "valibot": "^0.30.0"
   },
   "devDependencies": {
     "@types/bun": "latest"
